@@ -1,0 +1,90 @@
+name: Replace image tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag'
+        default: ''
+        required: true
+        type: string
+
+jobs:
+  replace-tag:
+    runs-on: ubuntu-latest
+
+    # https://docs.github.com/ja/actions/using-jobs/assigning-permissions-to-jobs
+    permissions:
+      contents: write # for Create new branch
+      pull-requests: write # for Create a Pull Request
+      
+    env:
+      BRANCH_NAME: update-image-tag/${{ inputs.tag }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Replace the image tags with yq
+        uses: mikefarah/yq@557dcb87b8efe786f89a12c09e9046b4753ab72e # v4.44.1
+        with:
+          cmd: |
+            # dev
+            # webapp-php のタグを書き換え
+            yq -i '(.spec.template.spec.containers[] | select(.name == "webapp-php").image) |= sub("([^:]+):.*", "$1:${{ inputs.tag }}")' \ 
+              ./manifests/overlays/dev/webapp/deployment.yaml
+            # webapp-nginx のタグを書き換え
+            yq -i '(.spec.template.spec.containers[] | select(.name == "webapp-nginx").image) |= sub("([^:]+):.*", "$1:${{ inputs.tag }}")' \
+              ./manifests/overlays/dev/webapp/deployment.yaml
+
+            # prod
+            # webapp-php のタグを書き換え
+            yq -i '(.spec.template.spec.containers[] | select(.name == "webapp-php").image) |= sub("([^:]+):.*", "$1:${{ inputs.tag }}")' \ 
+              ./manifests/overlays/prod/webapp/deployment.yaml
+            # webapp-nginx のタグを書き換え
+            yq -i '(.spec.template.spec.containers[] | select(.name == "webapp-nginx").image) |= sub("([^:]+):.*", "$1:${{ inputs.tag }}")' \
+              ./manifests/overlays/prod/webapp/deployment.yaml
+
+      # If this step is false, then the workflow will finish.
+      - name: Check if files are modified after running the replace step by yq
+        id: check-diff
+        run: |
+          if [ -z "$(git diff)" ]; then
+            echo "No changes detected."
+            exists_diff=false
+          else
+            exists_diff=true
+          fi
+          echo "exists-diff=${exists_diff}" >> $GITHUB_OUTPUT
+
+      # https://github.com/actions/create-github-app-token
+      - name: Generate GitHub Apps token
+        if: steps.check-diff.outputs.exists-diff == 'true'
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.AUTO_MERGE_BOT_APP_ID }}
+          private-key: ${{ secrets.AUTO_MERGE_BOT_PRIVATE_KEY }}
+
+      - name: Create a new branch
+        if: steps.check-diff.outputs.exists-diff == 'true'
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          git checkout -b ${{ env.BRANCH_NAME }}
+          git config user.name github-actions[bot]
+          git config user.email github-actions[bot]@users.noreply.github.com
+          git add --all
+          git commit -m "Update deployment image to ${{ inputs.tag }}"
+          git push origin ${{ env.BRANCH_NAME }}
+
+      - name: Create a Pull Request
+        if: steps.check-diff.outputs.exists-diff == 'true'
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          gh pr create \
+            --head ${{ env.BRANCH_NAME }} \
+            --base main \
+            --title "Update deployment to ${{ inputs.tag }}" \
+            --body "Automated change by GitHub Actions."

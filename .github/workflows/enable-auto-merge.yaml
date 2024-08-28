@@ -1,0 +1,40 @@
+name: Enable auto-merge
+
+# on:
+#   pull_request:
+#     branches:
+#       - main
+on:
+  workflow_dispatch:
+
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    if: >-
+      startsWith(github.head_ref, 'update-image-tag/') &&
+      github.event.pull_request.user.login == 'auto-merge-bot-for-masa0221[bot]'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+
+      - name: Approve the pull request
+        run: gh pr review --approve ${{ github.event.pull_request.number }}
+
+      - name: Enable the auto-merge feature # to automatically merge the pull request when the checks pass.
+        run: | 
+          # The auto-merge (--auto) settings are for users who want to use branch protection (Team or Enterprise plan).
+          # gh pr merge --merge --delete-branch --auto ${{ github.event.pull_request.number }}
+          
+          # WARNING: It will merge without waiting for the workflow that performs lint checking on manifests.
+          gh pr merge --merge --delete-branch ${{ github.event.pull_request.number }}
+

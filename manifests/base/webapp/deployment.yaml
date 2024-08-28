@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: webapp
+  name: webapp
+  namespace: webapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: webapp
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+      - name: webapp-php
+        image: webapp-php:v1.0.0
+        volumeMounts:
+        - mountPath: /var/run/php
+          name: php-sock
+        env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: webapp-config
+              key: db.host
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: webapp-config
+              key: db.name
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: webapp-secret
+              key: db.user
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: webapp-secret
+              key: db.pass
+        resources:
+          requests:
+            memory: "16Mi"
+            cpu: "50m"
+          limits:
+            memory: "32Mi"
+            cpu: "100m"
+      - name: webapp-nginx
+        image: webapp-nginx:v1.0.0
+        volumeMounts:
+        - name: php-sock
+          mountPath: /var/run/php
+        resources:
+          requests:
+            memory: "16Mi"
+            cpu: "50m"
+          limits:
+            memory: "32Mi"
+            cpu: "100m"
+      volumes:
+      - name: php-sock
+        emptyDir: {}
+

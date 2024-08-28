@@ -1,0 +1,47 @@
+name: 'Kubernetes Manifests Lint Check'
+description: ''
+
+inputs:
+  branch:
+    description: 'Branch'
+    required: true
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+  - name: Checkout code
+    uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+    with:
+      ref: ${{ inputs.branch }}
+
+  - name: Install Kustomize
+    shell: bash
+    run: |
+      curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
+      sudo mv kustomize /usr/local/bin/
+
+  - name: Install kubeconform
+    shell: bash
+    run: |
+      curl -L https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xvz
+      sudo mv kubeconform /usr/local/bin/
+
+  - name: Lint Dev Manifests with kubeconform
+    shell: bash
+    run: |
+      kustomize build ./manifests/overlays/dev > output-dev.yaml
+      kubeconform output-dev.yaml
+
+  - name: Lint Prod Manifests with kubeconform
+    shell: bash
+    run: |
+      kustomize build ./manifests/overlays/prod > output-prod.yaml
+      kubeconform -skip SecretProviderClass output-prod.yaml
+
+      # https://github.com/yannh/kubeconform#customresourcedefinition-crd-support
+      # https://github.com/datreeio/CRDs-catalog/tree/main/secrets-store.csi.x-k8s.io
+      kubeconform \
+        -schema-location https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/secrets-store.csi.x-k8s.io/secretproviderclass_v1.json \
+        ./manifests/overlays/prod/secret-provider-class.yaml
+

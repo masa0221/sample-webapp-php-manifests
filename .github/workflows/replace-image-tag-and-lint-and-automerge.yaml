@@ -1,0 +1,49 @@
+name: Replace image tag and lint and auto-merge
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag'
+        default: ''
+        required: true
+        type: string
+  
+jobs:
+  replace-tag:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # for create new branch
+      pull-requests: write # for approve a Pull Request
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        
+      - name: Generate GitHub Apps token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.AUTO_MERGE_BOT_APP_ID }}
+          private-key: ${{ secrets.AUTO_MERGE_BOT_PRIVATE_KEY }}
+
+      - name: Replace image tag
+        id: replace-image-tag
+        uses: ./.github/actions/replace-image-tag
+        with:
+          tag: ${{ inputs.tag }}
+          branch-prefix: update-image-tag
+          github-token: ${{ steps.generate-token.outputs.token }}
+
+      - name: Kubernetes Manifests Lint Check
+        uses: ./.github/actions/manifests-lint-check
+        with:
+          branch: ${{ steps.replace-image-tag.outputs.branch }}
+
+      - name: Enable auto-merge
+        uses: ./.github/actions/enable-auto-merge
+        with:
+          branch: ${{ steps.replace-image-tag.outputs.branch }}
+          approver-github-token: ${{ secrets.GITHUB_TOKEN }}
+          merge-operator-github-token: ${{ steps.generate-token.outputs.token }}

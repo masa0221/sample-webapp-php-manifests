@@ -1,0 +1,80 @@
+name: 'Generate a PullRequest to replace image tag'
+description: 'Replace the image tag in the deployment YAML files and generate a pull request'
+inputs:
+  branch-prefix:
+    description: 'Branch prefix'
+    required: true
+    default: ''
+  tag:
+    description: 'Container image tag'
+    required: true
+    default: ''
+  github-token:
+    description: 'GitHub Token'
+    required: true
+
+outputs:
+  branch:
+    description: "Created branch"
+    value: ${{ steps.create-new-branch.outputs.branch }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+
+    - name: Set up yq
+      uses: mikefarah/yq@557dcb87b8efe786f89a12c09e9046b4753ab72e # v4.44.1
+
+    - name: Replace tag
+      shell: bash
+      run: ${{ github.action_path }}/replace-tag.sh ${{ inputs.tag }}
+      env:
+        GITHUB_WORKSPACE: ${{ github.workspace }}
+
+    - name: Check if files are modified after running the replace step by yq
+      id: check-diff
+      shell: bash
+      run: |
+        if [ -z "$(git diff)" ]; then
+          echo "No changes detected."
+          exists_diff=false
+        else
+          exists_diff=true
+        fi
+        echo "exists-diff=${exists_diff}" >> $GITHUB_OUTPUT
+
+    - name: Create a new branch
+      id: create-new-branch
+      if: steps.check-diff.outputs.exists-diff == 'true'
+      shell: bash
+      run: |
+        branch=${{ inputs.branch-prefix }}/${{ inputs.tag }}
+        echo "branch=${branch}" >> $GITHUB_OUTPUT
+        git checkout -b ${branch}
+        git config user.name github-actions[bot]
+        git config user.email github-actions[bot]@users.noreply.github.com
+        git add --all
+        git commit -m "Update deployment image to ${{ inputs.tag }}"
+
+    - name: Push the new branch
+      if: steps.check-diff.outputs.exists-diff == 'true'
+      shell: bash
+      run: |
+        git push origin ${{ steps.create-new-branch.outputs.branch }}
+      env:
+        GITHUB_TOKEN:  ${{ inputs.github-token }}
+
+    - name: Create a Pull Request
+      if: steps.check-diff.outputs.exists-diff == 'true'
+      shell: bash
+      run: |
+        gh pr create \
+          --head ${{ steps.create-new-branch.outputs.branch }} \
+          --base main \
+          --title "Update deployment to ${{ inputs.tag }}" \
+          --body "Automated change by GitHub Actions."
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+
