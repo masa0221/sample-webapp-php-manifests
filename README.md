@@ -1,1 +1,1 @@
-# experimental-webapp-sample-php-manifests
+# webapp-sample-php-manifests
