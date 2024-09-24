@@ -88,3 +88,6 @@ X-Powered-By: PHP/8.3.10
 ```
 kubectl delete -k ./manifests/overlays/dev
 ```
+
+## LICENSE
+Apache License 2.0
