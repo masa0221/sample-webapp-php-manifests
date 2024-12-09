@@ -1,3 +1,5 @@
+# Actions style workflow to prevent auto-merge before Lint Check
+# For free plan
 name: Replace image tag and lint and auto-merge
 
 on:
