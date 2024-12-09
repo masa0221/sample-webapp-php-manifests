@@ -17,7 +17,7 @@ jobs:
     permissions:
       contents: write # for Create new branch
       pull-requests: write # for Create a Pull Request
-      
+
     env:
       BRANCH_NAME: update-image-tag/${{ inputs.tag }}
     
@@ -25,25 +25,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Replace the image tags with yq
+      - name: Set up yq
         uses: mikefarah/yq@557dcb87b8efe786f89a12c09e9046b4753ab72e # v4.44.1
-        with:
-          cmd: |
-            # dev
-            # webapp-php のタグを書き換え
-            yq -i '(.spec.template.spec.containers[] | select(.name == "webapp-php").image) |= sub("([^:]+):.*", "$1:${{ inputs.tag }}")' \ 
-              ./manifests/overlays/dev/webapp/deployment.yaml
-            # webapp-nginx のタグを書き換え
-            yq -i '(.spec.template.spec.containers[] | select(.name == "webapp-nginx").image) |= sub("([^:]+):.*", "$1:${{ inputs.tag }}")' \
-              ./manifests/overlays/dev/webapp/deployment.yaml
 
-            # prod
-            # webapp-php のタグを書き換え
-            yq -i '(.spec.template.spec.containers[] | select(.name == "webapp-php").image) |= sub("([^:]+):.*", "$1:${{ inputs.tag }}")' \ 
-              ./manifests/overlays/prod/webapp/deployment.yaml
-            # webapp-nginx のタグを書き換え
-            yq -i '(.spec.template.spec.containers[] | select(.name == "webapp-nginx").image) |= sub("([^:]+):.*", "$1:${{ inputs.tag }}")' \
-              ./manifests/overlays/prod/webapp/deployment.yaml
+      - name: Replace tag
+        shell: bash
+        run: ./tools/replace-tag.sh ${{ inputs.tag }}
 
       # If this step is false, then the workflow will finish.
       - name: Check if files are modified after running the replace step by yq
