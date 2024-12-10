@@ -15,7 +15,7 @@ spec:
       serviceAccountName: webapp-sa
       containers:
         - name: webapp-php
-          image: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/webapp-php:v1.0.0
+          image: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/webapp-php:test
           imagePullPolicy: Always
           volumeMounts:
             # base の volumeMounts の値を上書きするので php-sock が消えないようにこちらでも定義する
@@ -26,7 +26,7 @@ spec:
               mountPath: /var/secrets
               readOnly: true
         - name: webapp-nginx
-          image: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/webapp-nginx:v1.0.0
+          image: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/webapp-nginx:test
           imagePullPolicy: Always
       volumes:
         - name: secret-store
