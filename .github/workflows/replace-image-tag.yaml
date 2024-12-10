@@ -50,8 +50,8 @@ jobs:
         id: generate-token
         uses: actions/create-github-app-token@v1
         with:
-          app-id: ${{ secrets.AUTO_MERGE_BOT_APP_ID }}
-          private-key: ${{ secrets.AUTO_MERGE_BOT_PRIVATE_KEY }}
+          app-id: ${{ secrets.DEPLOY_PIPELINE_APP_ID }}
+          private-key: ${{ secrets.DEPLOY_PIPELINE_PRIVATE_KEY }}
 
       - name: Create a new branch
         if: steps.check-diff.outputs.exists-diff == 'true'
