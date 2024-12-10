@@ -11,8 +11,8 @@ spec:
     spec:
       containers:
         - name: webapp-php
-          image: webapp-php:test
+          image: webapp-php:latest
           imagePullPolicy: Never
         - name: webapp-nginx
-          image: webapp-nginx:test
+          image: webapp-nginx:latest
           imagePullPolicy: Never
