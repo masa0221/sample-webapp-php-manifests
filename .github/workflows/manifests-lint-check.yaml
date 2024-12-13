@@ -19,5 +19,5 @@ jobs:
     - name: Install tools
       uses: asdf-vm/actions/install@v3
 
-    - name: Lint manifests
-      run: ./tools/lint.sh
+    - name: Lint manifests (Kubernetes 1.30.0)
+      run: ./tools/lint.sh 1.30.0
