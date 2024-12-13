@@ -6,6 +6,12 @@ set -e
 # 検証するKubernetesのバージョン(kubeconformで指定)
 K8S_VERSION=${1:-master}
 
+# リポジトリのルートディレクトリ
+REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel)}"
+
+# ベースパスを設定
+BASE_PATH="${REPO_ROOT}/manifests/overlays"
+
 # 色設定
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -75,14 +81,14 @@ print_box_message "Using Kubernetes version: ${K8S_VERSION}"
 # dev のチェック
 run_command \
   "Checking dev manifest" \
-  "kubectl kustomize ./manifests/overlays/dev | kubeconform \
+  "kubectl kustomize ${BASE_PATH}/dev | kubeconform \
     --kubernetes-version ${K8S_VERSION} \
     --summary"
 
 # prod のチェック
 run_command \
   "Checking prod manifest" \
-  "kubectl kustomize ./manifests/overlays/prod | kubeconform \
+  "kubectl kustomize ${BASE_PATH}/prod | kubeconform \
     --kubernetes-version ${K8S_VERSION} \
     --summary \
     --skip SecretProviderClass"
@@ -96,7 +102,7 @@ run_command \
     --kubernetes-version ${K8S_VERSION} \
     --summary \
     --schema-location https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/secrets-store.csi.x-k8s.io/secretproviderclass_v1.json \
-    ./manifests/overlays/prod/secret-provider-class.yaml"
+    ${BASE_PATH}/prod/secret-provider-class.yaml"
 
 # 終了メッセージ
 print_section "All checks completed successfully"
