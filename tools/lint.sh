@@ -3,6 +3,9 @@
 # エラー発生時にスクリプトを停止
 set -e
 
+# 検証するKubernetesのバージョン(kubeconformで指定)
+K8S_VERSION=${1:-master}
+
 # 色設定
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -47,19 +50,42 @@ check_cmd() {
   fi
 }
 
+# 枠付きのメッセージを出力
+print_box_message() {
+  # メッセージ
+  local message=$1
+
+  # 枠線を生成
+  local line_length=$(( ${#message} + 4 )) # メッセージ長さ + 左右の余白分
+  local border=$(printf '+%.0s' $(seq 1 $line_length))
+
+  # 表示
+  echo "${border}"
+  echo "| ${message} |"
+  echo "${border}"
+}
+
 # 必須コマンドのチェック
 check_cmd kubectl
 check_cmd kubeconform
 
+# チェックするスキーマのバージョンを出力
+print_box_message "Using Kubernetes version: ${K8S_VERSION}"
+
 # dev のチェック
 run_command \
   "Checking dev manifest" \
-  "kubectl kustomize ./manifests/overlays/dev | kubeconform --summary"
+  "kubectl kustomize ./manifests/overlays/dev | kubeconform \
+    --kubernetes-version ${K8S_VERSION} \
+    --summary"
 
 # prod のチェック
 run_command \
   "Checking prod manifest" \
-  "kubectl kustomize ./manifests/overlays/prod | kubeconform --summary -skip SecretProviderClass"
+  "kubectl kustomize ./manifests/overlays/prod | kubeconform \
+    --kubernetes-version ${K8S_VERSION} \
+    --summary \
+    --skip SecretProviderClass"
 
 # prod の CRD チェック
 # https://github.com/yannh/kubeconform#customresourcedefinition-crd-support
@@ -67,6 +93,7 @@ run_command \
 run_command \
   "Checking CRD for prod manifest" \
   "kubeconform \
+    --kubernetes-version ${K8S_VERSION} \
     --summary \
     --schema-location https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/secrets-store.csi.x-k8s.io/secretproviderclass_v1.json \
     ./manifests/overlays/prod/secret-provider-class.yaml"
