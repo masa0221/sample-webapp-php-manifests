@@ -2,6 +2,12 @@ name: Kubernetes Manifests Lint Check
 
 on:
   push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+      - synchronize
 
 jobs:
   lint:
@@ -15,4 +21,3 @@ jobs:
 
     - name: Lint manifests
       run: ./tools/lint.sh
-
