@@ -63,8 +63,6 @@ runs:
       shell: bash
       run: |
         git push origin ${{ steps.create-new-branch.outputs.branch }}
-      env:
-        GITHUB_TOKEN:  ${{ inputs.github-token }}
 
     - name: Create a Pull Request
       if: steps.check-diff.outputs.exists-diff == 'true'
@@ -76,5 +74,5 @@ runs:
           --title "Update deployment to ${{ inputs.tag }}" \
           --body "Automated change by GitHub Actions."
       env:
-        GITHUB_TOKEN: ${{ inputs.github-token }}
+        GH_TOKEN: ${{ inputs.github-token }}
 
