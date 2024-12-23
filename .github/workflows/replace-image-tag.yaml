@@ -55,8 +55,6 @@ jobs:
 
       - name: Create a new branch
         if: steps.check-diff.outputs.exists-diff == 'true'
-        env:
-          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           git checkout -b ${{ env.BRANCH_NAME }}
           git config user.name github-actions[bot]
@@ -68,7 +66,7 @@ jobs:
       - name: Create a Pull Request
         if: steps.check-diff.outputs.exists-diff == 'true'
         env:
-          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           gh pr create \
             --head ${{ env.BRANCH_NAME }} \

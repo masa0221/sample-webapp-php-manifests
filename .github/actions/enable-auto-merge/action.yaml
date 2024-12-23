@@ -25,7 +25,7 @@ runs:
       shell: bash
       run: gh pr review --approve ${{ github.event.pull_request.number }}
       env: 
-        GITHUB_TOKEN: ${{ inputs.approver-github-token }} # is different from ${{ inputs.github-token }}
+        GH_TOKEN: ${{ inputs.approver-github-token }} # is different from ${{ inputs.github-token }}
 
     - name: Enable the auto-merge feature # to automatically merge the pull request when the checks pass.
       shell: bash
@@ -36,4 +36,4 @@ runs:
         # WARNING: It will merge without waiting for the workflow that performs lint checking on manifests.
         gh pr merge --merge --delete-branch ${{ github.event.pull_request.number }}
       env: 
-        GITHUB_TOKEN: ${{ inputs.merge-operator-github-token }}
+        GH_TOKEN: ${{ inputs.merge-operator-github-token }}
