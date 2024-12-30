@@ -4,6 +4,5 @@ metadata:
   name: webapp-config
   namespace: webapp
 data:
-  db.host: webapp.cluster-abcdefghij12.ap-northeast-1.rds.amazonaws.com
+  db.host: example-for-eks.cluster-abcdefghij12.ap-northeast-1.rds.amazonaws.com
   db.name: webapp_db
-

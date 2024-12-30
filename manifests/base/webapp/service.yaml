@@ -7,11 +7,10 @@ metadata:
     app: webapp
 spec:
   ports:
-  - name: http
-    port: 8080
-    protocol: TCP
-    targetPort: 80
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: 80
   selector:
     app: webapp
   type: ClusterIP
-
